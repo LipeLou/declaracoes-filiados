@@ -19,7 +19,6 @@ ENV/
 .idea/
 
 # Dados e saídas com informações pessoais
-Data/
 saida_informes_irpf/
 *.pdf
 *.xlsx
