@@ -1,0 +1,17 @@
+# Configuração do gerador de informes IRPF
+# Caminhos relativos ao diretório do projeto (raiz do repositório)
+
+ano_base: 2026
+
+# Pasta onde os PDFs serão salvos (criada se não existir)
+pasta_saida: ./saida_informes_irpf
+
+# Template PDF (modelo com layout das páginas)
+template_pdf: ./Data/modelo.pdf
+
+# Planilha Unimed (saída do processamento em 01_Processamento ou planilha base)
+planilha_unimed: ./Data/dados.xlsx
+# Aba da planilha (deixe null para primeira aba)
+sheet_name: OUT 2025
+
+planilha_uniodonto: ./Data/uniodonto.xlsx

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+build/
+dist/
+
+# Ambientes virtuais
+.venv/
+venv/
+ENV/
+.env
+.env.*
+
+# IDEs
+.vscode/
+.idea/
+
+# Dados e saídas com informações pessoais
+Data/
+saida_informes_irpf/
+*.pdf
+*.xlsx
+*.xls
+*.csv
+
+# Sistema operacional
+.DS_Store
