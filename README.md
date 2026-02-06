@@ -1,11 +1,11 @@
 # Declarações de Filiados (IRPF)
 
-Gerador de informes anuais de despesas médicas para declaração de IRPF, a partir de planilhas da Unimed e (opcionalmente) da Uniodonto. O script lê as 12 abas mensais (JAN \<ano\> .. DEZ \<ano\>), soma os valores e gera um PDF por titular com base em um template.
+Gerador de informes anuais de despesas médicas para declaração de IRPF, com base em planilhas da Unimed e (opcionalmente) da Uniodonto. O processamento consolida 12 abas mensais, soma os valores e gera um PDF por titular usando um template padronizado.
 
 ## Visão geral
 
 - Leitura de 12 abas mensais por planilha (Unimed e Uniodonto)
-- Agrupamento por titular (CPF) e soma anual
+- Consolidação anual por titular (CPF)
 - Detalhes agregados por pessoa (nome + código/carteira/CPF)
 - Validação automática de inconsistências
 - Geração de PDFs com layout padronizado
@@ -39,7 +39,21 @@ Edite `config/irpf.yml` para apontar para:
 - `template_pdf`: modelo do informe (PDF)
 - `pasta_saida`: diretório de saída dos PDFs
 - `ano_base`: ano-base do informe (usado para gerar abas JAN \<ano\> .. DEZ \<ano\>)
-- `abas_mensais`: (opcional) lista de nomes de abas; se omitido, usa JAN/FEV/.../DEZ + ano_base
+- `abas_mensais`: (opcional) lista explícita de nomes de abas
+
+### Abas mensais (importante)
+
+Por padrão, as abas são geradas automaticamente no formato:
+
+```
+JAN <ano_base>, FEV <ano_base>, MAR <ano_base>, ... , DEZ <ano_base>
+```
+
+Se a sua planilha não seguir esse padrão, defina a lista manualmente em `config/irpf.yml`:
+
+```
+abas_mensais: [JAN 2025, FEV 2025, MAR 2025, ABR 2025, MAI 2025, JUN 2025, JUL 2025, AGO 2025, SET 2025, OUT 2025, NOV 2025, DEZ 2025]
+```
 
 Os arquivos de entrada e saída ficam fora do controle de versão por padrão (ver `.gitignore`).
 
@@ -52,9 +66,9 @@ python main.py
 Parâmetros úteis:
 
 ```bash
-python scripts/main.py --dry-run
-python scripts/main.py --config config/irpf.yml --sheet "OUT 2025" --ano 2026
-python scripts/main.py --planilha Data/dados.xlsx --planilha-uniodonto Data/uniodonto.xlsx
+python main.py --dry-run
+python main.py --config config/irpf.yml --sheet "OUT 2025" --ano 2026
+python main.py --planilha Data/dados.xlsx --planilha-uniodonto Data/uniodonto.xlsx
 ```
 
 ---
