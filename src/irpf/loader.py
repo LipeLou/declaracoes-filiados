@@ -13,6 +13,14 @@ import pandas as pd
 
 from .models import DadosTitular, FilialRow
 
+# Abreviações dos meses (3 letras) para nomes de abas anuais
+_MESES_ABA = ("JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ")
+
+
+def obter_nomes_abas_anual(ano: int) -> List[str]:
+    """Gera a lista dos 12 nomes de abas mensais: JAN <ano>, FEV <ano>, ..., DEZ <ano>."""
+    return [f"{mes} {ano}" for mes in _MESES_ABA]
+
 
 def _normalizar_cpf(cpf: object) -> str:
     """Remove formatação e retorna apenas dígitos; vazio se inválido."""
@@ -49,6 +57,62 @@ def _normalizar_codigo(val: object) -> str:
     return str(int(val)) if isinstance(val, (int, float)) else str(val).strip()
 
 
+def _agregar_linhas_por_chave(
+    linhas: List[FilialRow],
+    chave: str,
+) -> List[FilialRow]:
+    """
+    Agrega FilialRow por chave (consultas: nome+codigo_familia, mensalidades: nome+carteira, uniodonto: nome+cpf).
+    chave deve ser "consultas", "mensalidades", "uniodonto".
+    """
+    from collections import defaultdict
+    grupos: Dict[tuple, float] = defaultdict(float)
+    exemplar: Dict[tuple, FilialRow] = {}
+    for row in linhas:
+        if chave == "consultas":
+            k = (row.nome, row.codigo_familia)
+        elif chave in ("mensalidades", "mensalidades_retro"):
+            k = (row.nome, row.carteira)
+        else:  # uniodonto
+            k = (row.nome, row.cpf)
+        grupos[k] += row.valor
+        if k not in exemplar:
+            exemplar[k] = row
+    out: List[FilialRow] = []
+    for k, total in grupos.items():
+        ex = exemplar[k]
+        if chave == "consultas":
+            out.append(FilialRow(nome=ex.nome, valor=total, codigo_familia=ex.codigo_familia))
+        elif chave in ("mensalidades", "mensalidades_retro"):
+            out.append(FilialRow(nome=ex.nome, valor=total, carteira=ex.carteira))
+        else:
+            out.append(FilialRow(nome=ex.nome, valor=total, cpf=ex.cpf))
+    return out
+
+
+def _normalizar_colunas(df: pd.DataFrame) -> None:
+    """Normaliza nomes de colunas em maiúsculas e sem espaços extras."""
+    df.columns = [str(c).strip().upper() for c in df.columns]
+
+
+def _tentar_ler_unimed_com_skiprows(
+    caminho: Path,
+    sheet_name: Optional[str],
+    skiprows: int,
+) -> pd.DataFrame:
+    """Tenta ler a planilha Unimed com um skiprows específico."""
+    kwargs = {"skiprows": skiprows}
+    if sheet_name is not None:
+        kwargs["sheet_name"] = sheet_name
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r"Unknown type for Business Objects.*",
+            category=UserWarning,
+        )
+        return pd.read_excel(caminho, **kwargs)
+
+
 def carregar_planilha_unimed(
     caminho: str | Path,
     sheet_name: Optional[str] = None,
@@ -62,20 +126,20 @@ def carregar_planilha_unimed(
     if not path.exists():
         raise FileNotFoundError(f"Planilha não encontrada: {path}")
 
-    kwargs = {"skiprows": skiprows}
-    if sheet_name is not None:
-        kwargs["sheet_name"] = sheet_name
+    required = ["NOME", "CPF", "DEPENDENCIA", "MENSALIDADE", "CONSULTA"]
+    skiprows_opcoes = [skiprows] + [s for s in (0, 1, 2, 3, 4) if s != skiprows]
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message=r"Unknown type for Business Objects.*",
-            category=UserWarning,
-        )
-        df = pd.read_excel(path, **kwargs)
-
-    # Normalizar nomes de colunas (maiúsculas, strip)
-    df.columns = [str(c).strip().upper() for c in df.columns]
+    df = None
+    for sr in skiprows_opcoes:
+        df = _tentar_ler_unimed_com_skiprows(path, sheet_name, sr)
+        _normalizar_colunas(df)
+        if all(col in df.columns for col in required):
+            break
+    else:
+        # Não encontrou cabeçalho válido em nenhuma tentativa
+        colunas = set(df.columns) if df is not None else set()
+        faltantes = [col for col in required if col not in colunas]
+        raise ValueError(f"Colunas obrigatórias ausentes: {', '.join(faltantes)}")
 
     # Mapear variações de nome de coluna
     cod_fam = None
@@ -86,7 +150,6 @@ def carregar_planilha_unimed(
     if cod_fam is None and "CÓD DA FAMILIA" in df.columns:
         cod_fam = "CÓD DA FAMILIA"
 
-    required = ["NOME", "CPF", "DEPENDENCIA", "MENSALIDADE", "CONSULTA"]
     for col in required:
         if col not in df.columns:
             raise ValueError(f"Coluna obrigatória ausente: {col}")
@@ -101,6 +164,38 @@ def carregar_planilha_unimed(
         df[cod_fam] = ""
 
     return df
+
+
+def carregar_planilha_unimed_anual(
+    caminho: str | Path,
+    sheet_names: List[str],
+    skiprows: int = 1,
+) -> pd.DataFrame:
+    """
+    Carrega todas as abas mensais da planilha Unimed e concatena os dados.
+    Se alguma aba não existir, levanta erro.
+    """
+    path = Path(caminho)
+    if not path.exists():
+        raise FileNotFoundError(f"Planilha não encontrada: {path}")
+
+    dfs: List[pd.DataFrame] = []
+    for sheet_name in sheet_names:
+        df = carregar_planilha_unimed(caminho, sheet_name=sheet_name, skiprows=skiprows)
+        df["_MES_ABA"] = sheet_name
+        dfs.append(df)
+    return pd.concat(dfs, ignore_index=True)
+
+
+def mesclar_mapas_uniodonto(mapas: List[Dict[str, List[FilialRow]]]) -> Dict[str, List[FilialRow]]:
+    """
+    Mescla múltiplos mapas titular -> [FilialRow] concatenando as listas por titular.
+    """
+    resultado: Dict[str, List[FilialRow]] = {}
+    for mapa in mapas:
+        for chave, linhas in mapa.items():
+            resultado.setdefault(chave, []).extend(linhas)
+    return resultado
 
 
 def carregar_planilha_uniodonto(
@@ -179,6 +274,31 @@ def carregar_planilha_uniodonto(
     return mapa
 
 
+def carregar_planilha_uniodonto_anual(
+    caminho: str | Path,
+    sheet_names: List[str],
+) -> Dict[str, List[FilialRow]]:
+    """
+    Carrega todas as abas mensais da planilha Uniodonto e mescla os mapas por titular.
+    Se alguma aba não existir, levanta erro.
+    """
+    mapas: List[Dict[str, List[FilialRow]]] = []
+    for sheet_name in sheet_names:
+        mapa = carregar_planilha_uniodonto(caminho, sheet_name=sheet_name)
+        mapas.append(mapa)
+    return mesclar_mapas_uniodonto(mapas)
+
+
+def _mesclar_titular(destino: DadosTitular, origem: DadosTitular) -> None:
+    """Soma totais e concatena linhas de detalhes."""
+    destino.total_consultas += origem.total_consultas
+    destino.total_mensalidades += origem.total_mensalidades
+    destino.total_mensalidades_retro += origem.total_mensalidades_retro
+    destino.linhas_consultas.extend(origem.linhas_consultas)
+    destino.linhas_mensalidades.extend(origem.linhas_mensalidades)
+    destino.linhas_mensalidades_retro.extend(origem.linhas_mensalidades_retro)
+
+
 def agrupar_por_titular(df: pd.DataFrame, uniodonto_map: Optional[Dict[str, List[FilialRow]]] = None) -> List[DadosTitular]:
     """
     Agrupa as linhas por titular (DEPENDENCIA == 'Titular') usando código da família.
@@ -198,12 +318,13 @@ def agrupar_por_titular(df: pd.DataFrame, uniodonto_map: Optional[Dict[str, List
         df["_COD_FAMILIA"] = df["CPF"].apply(_normalizar_cpf)
         cod_fam = "_COD_FAMILIA"
 
-    titulares: List[DadosTitular] = []
+    titulares_map: Dict[str, DadosTitular] = {}
     df_clean = df.dropna(subset=["NOME", "CPF"]).copy()
     df_clean["_cpf_norm"] = df_clean["CPF"].apply(_normalizar_cpf)
     df_clean["_cod_fam"] = df_clean[cod_fam].apply(_normalizar_codigo)
-
-    for cod_familia, grp in df_clean.groupby("_cod_fam", sort=False):
+    if "_MES_ABA" not in df_clean.columns:
+        df_clean["_MES_ABA"] = ""
+    for (_, cod_familia), grp in df_clean.groupby(["_MES_ABA", "_cod_fam"], sort=False):
         if not cod_familia:
             continue
         titular_row = grp[grp["DEPENDENCIA"].astype(str).str.strip().str.upper() == "TITULAR"]
@@ -267,26 +388,39 @@ def agrupar_por_titular(df: pd.DataFrame, uniodonto_map: Optional[Dict[str, List
                     carteira=cart,
                 ))
 
-        linhas_uniodonto: List[FilialRow] = []
-        total_uniodonto = 0.0
-        if uniodonto_map:
-            chave_nome = _normalizar_nome_chave(nome_tit)
-            chave_cpf = _normalizar_cpf(cpf_tit)
-            chave = f"{chave_nome}|{chave_cpf}"
-            linhas_uniodonto = uniodonto_map.get(chave, [])
-            total_uniodonto = sum(l.valor for l in linhas_uniodonto)
-
-        titulares.append(DadosTitular(
+        titular_parcial = DadosTitular(
             cpf_titular=cpf_tit,
             nome_titular=nome_tit,
             total_consultas=total_cons,
             total_mensalidades=total_mens,
             total_mensalidades_retro=total_retro,
-            total_uniodonto=total_uniodonto,
+            total_uniodonto=0.0,
             linhas_consultas=linhas_consultas,
             linhas_mensalidades=linhas_mensalidades,
             linhas_mensalidades_retro=linhas_mensalidades_retro,
-            linhas_uniodonto=linhas_uniodonto,
-        ))
+            linhas_uniodonto=[],
+        )
 
-    return titulares
+        if cpf_tit in titulares_map:
+            _mesclar_titular(titulares_map[cpf_tit], titular_parcial)
+        else:
+            titulares_map[cpf_tit] = titular_parcial
+
+    # Aplicar Uniodonto uma única vez por titular, após consolidar os meses
+    if uniodonto_map:
+        for d in titulares_map.values():
+            chave_nome = _normalizar_nome_chave(d.nome_titular)
+            chave_cpf = _normalizar_cpf(d.cpf_titular)
+            chave = f"{chave_nome}|{chave_cpf}"
+            d.linhas_uniodonto = uniodonto_map.get(chave, [])
+            d.total_uniodonto = sum(l.valor for l in d.linhas_uniodonto)
+
+    # Agregar detalhes por pessoa (nome + código/carteira/CPF) para informe anual
+    for d in titulares_map.values():
+        d.linhas_consultas = _agregar_linhas_por_chave(d.linhas_consultas, "consultas")
+        d.linhas_mensalidades = _agregar_linhas_por_chave(d.linhas_mensalidades, "mensalidades")
+        d.linhas_mensalidades_retro = _agregar_linhas_por_chave(d.linhas_mensalidades_retro, "mensalidades_retro")
+        d.linhas_uniodonto = _agregar_linhas_por_chave(d.linhas_uniodonto, "uniodonto")
+        d.total_uniodonto = sum(l.valor for l in d.linhas_uniodonto)
+
+    return list(titulares_map.values())

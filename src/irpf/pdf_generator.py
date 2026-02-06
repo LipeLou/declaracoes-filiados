@@ -62,6 +62,31 @@ def _insert_centered_text(
     else:
         page.insert_text((x, y), text, fontsize=fontsize, fontname="helv")
 
+def _insert_right_text(
+    page: fitz.Page,
+    left: float,
+    right: float,
+    y: float,
+    text: str,
+    fontsize: float = 10,
+    bold: bool = False,
+    padding: float = 78,
+) -> None:
+    """Insere texto alinhado à direita entre left/right com ajuste de fonte."""
+    if not text:
+        return
+    text = str(text).upper()
+    cell_width = max(right - left, 1)
+    width = fitz.get_text_length(text, fontname="helv", fontsize=fontsize)
+    if width > cell_width - (2 * padding):
+        fontsize = max(7, fontsize * (cell_width - (2 * padding)) / max(width, 1))
+        width = fitz.get_text_length(text, fontname="helv", fontsize=fontsize)
+    x = right - width - padding
+    if bold:
+        _insert_bold(page, x, y, text, fontsize=fontsize)
+    else:
+        page.insert_text((x, y), text, fontsize=fontsize, fontname="helv")
+
 def _compute_total_row_y(first_row_y: float, row_height: float, row_starts: list[float]) -> float:
     """Calcula a posição Y da linha de total da tabela."""
     if row_starts:
@@ -193,13 +218,13 @@ def _inserir_consultas(page: fitz.Page, d: DadosTitular) -> None:
 
     for i, lin in enumerate(d.linhas_consultas):
         y = row_y + i * cfg["row_height"]
-        _insert_centered_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
+        _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_cod_left"], cfg["col_cod_right"], _cell_center_y(y, cfg["row_height"], 10), lin.codigo_familia[:15], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(y, cfg["row_height"], 10), _fmt_valor(lin.valor), fontsize=10, bold=False)
 
     total_y = _compute_total_row_y(cfg["first_row_y"], cfg["row_height"], row_starts)
     _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(total_y, cfg["row_height"], 10), _fmt_valor(d.total_consultas), fontsize=10, bold=True)
-    _insert_centered_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
+    _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
     row_starts.append(total_y)
     _draw_table_header(
         page,
@@ -234,13 +259,13 @@ def _inserir_mensalidades(page: fitz.Page, d: DadosTitular) -> None:
 
     for i, lin in enumerate(d.linhas_mensalidades):
         y = row_y + i * cfg["row_height"]
-        _insert_centered_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
+        _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_cartao_left"], cfg["col_cartao_right"], _cell_center_y(y, cfg["row_height"], 10), lin.carteira[:18], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(y, cfg["row_height"], 10), _fmt_valor(lin.valor), fontsize=10, bold=False)
 
     total_y = _compute_total_row_y(cfg["first_row_y"], cfg["row_height"], row_starts)
     _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(total_y, cfg["row_height"], 10), _fmt_valor(d.total_mensalidades), fontsize=10, bold=True)
-    _insert_centered_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
+    _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
     row_starts.append(total_y)
     _draw_table_header(
         page,
@@ -275,13 +300,13 @@ def _inserir_mensalidades_retro(page: fitz.Page, d: DadosTitular) -> None:
 
     for i, lin in enumerate(d.linhas_mensalidades_retro):
         y = row_y + i * cfg["row_height"]
-        _insert_centered_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
+        _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_cartao_left"], cfg["col_cartao_right"], _cell_center_y(y, cfg["row_height"], 10), lin.carteira[:18], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(y, cfg["row_height"], 10), _fmt_valor(lin.valor), fontsize=10, bold=False)
 
     total_y = _compute_total_row_y(cfg["first_row_y"], cfg["row_height"], row_starts)
     _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(total_y, cfg["row_height"], 10), _fmt_valor(d.total_mensalidades_retro), fontsize=10, bold=True)
-    _insert_centered_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
+    _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
     row_starts.append(total_y)
     _draw_table_header(
         page,
@@ -318,13 +343,13 @@ def _inserir_uniodonto(page: fitz.Page, d: DadosTitular) -> None:
 
     for i, lin in enumerate(d.linhas_uniodonto):
         y = row_y + i * cfg["row_height"]
-        _insert_centered_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
+        _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_cpf_left"], cfg["col_cpf_right"], _cell_center_y(y, cfg["row_height"], 10), _formatar_cpf_exibicao(lin.cpf) if lin.cpf else "", fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(y, cfg["row_height"], 10), _fmt_valor(lin.valor), fontsize=10, bold=False)
 
     total_y = _compute_total_row_y(cfg["first_row_y"], cfg["row_height"], row_starts)
     _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(total_y, cfg["row_height"], 10), _fmt_valor(d.total_uniodonto), fontsize=10, bold=True)
-    _insert_centered_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
+    _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
     row_starts.append(total_y)
     _draw_table_header(
         page,

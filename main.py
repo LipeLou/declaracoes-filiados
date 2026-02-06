@@ -20,7 +20,12 @@ if str(ROOT) not in sys.path:
 
 import yaml
 
-from src.irpf.loader import carregar_planilha_unimed, carregar_planilha_uniodonto, agrupar_por_titular
+from src.irpf.loader import (
+    carregar_planilha_unimed_anual,
+    carregar_planilha_uniodonto_anual,
+    agrupar_por_titular,
+    obter_nomes_abas_anual,
+)
 from src.irpf.models import DadosTitular
 from src.irpf.validator import validar_totais, ResultadoValidacao
 from src.irpf.pdf_generator import gerar_pdf_titular
@@ -71,7 +76,7 @@ def main() -> int:
         "--sheet",
         type=str,
         default=None,
-        help="Aba da planilha (ex: OUT 2025)",
+        help="(Opcional) Lista de abas separadas por vírgula; senão usa 12 abas JAN-DEZ do ano",
     )
     parser.add_argument(
         "--ano",
@@ -113,12 +118,23 @@ def main() -> int:
         log.error("Template PDF não encontrado: %s", template_path)
         return 1
 
-    sheet_name = args.sheet or config.get("sheet_name")
+    # Lista de abas mensais: config/args ou padrão JAN <ano> .. DEZ <ano>
+    abas_config = config.get("abas_mensais")
+    if args.sheet:
+        sheet_names = [s.strip() for s in args.sheet.split(",") if s.strip()]
+    elif abas_config:
+        sheet_names = list(abas_config) if isinstance(abas_config, (list, tuple)) else [str(abas_config)]
+    else:
+        sheet_names = obter_nomes_abas_anual(ano)
+    if len(sheet_names) == 0:
+        log.error("Nenhuma aba configurada para leitura.")
+        return 1
+
     uniodonto_path = args.planilha_uniodonto or config.get("planilha_uniodonto")
     uniodonto_map = None
 
-    log.info("Carregando planilha: %s (aba=%s)", planilha_path, sheet_name)
-    df = carregar_planilha_unimed(planilha_path, sheet_name=sheet_name)
+    log.info("Carregando planilha Unimed: %s (%d abas)", planilha_path, len(sheet_names))
+    df = carregar_planilha_unimed_anual(planilha_path, sheet_names)
     if uniodonto_path:
         uniodonto_path = Path(uniodonto_path)
         if not uniodonto_path.is_absolute():
@@ -126,8 +142,8 @@ def main() -> int:
         if not uniodonto_path.exists():
             log.error("Planilha Uniodonto não encontrada: %s", uniodonto_path)
             return 1
-        log.info("Carregando Uniodonto: %s", uniodonto_path)
-        uniodonto_map = carregar_planilha_uniodonto(uniodonto_path)
+        log.info("Carregando Uniodonto: %s (%d abas)", uniodonto_path, len(sheet_names))
+        uniodonto_map = carregar_planilha_uniodonto_anual(uniodonto_path, sheet_names)
     titulares = agrupar_por_titular(df, uniodonto_map=uniodonto_map)
     log.info("Agrupados %d titulares por CPF.", len(titulares))
 
