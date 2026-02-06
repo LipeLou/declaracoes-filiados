@@ -62,76 +62,76 @@ HEADER_BY_PAGE = {
 # Página 1 — Resumo: tabela convênio / valor (até 3 linhas + total)
 # Linhas de dados em y ≈ 301, 323, 346; total em 372
 RESUMO = {
-    "header_y": 293.49,
+    "header_y": 290.00,
     "row_height": 22.0,
     "first_row_y": 312.00,
-    "col_desc_left": 39.90,
+    "col_desc_left": 40.00,
     "col_desc_right": 360.00,
-    "col_cnpj_left": 365.14,
-    "col_cnpj_right": 450.49,
-    "col_valor_left": 511.61,
-    "col_valor_right": 554.74,
+    "col_cnpj_left": 365.00,
+    "col_cnpj_right": 450.00,
+    "col_valor_left": 510.00,
+    "col_valor_right": 550.00,
     "total_row_y": 372.00,
-    "total_value_rect": (511.61, 372.00, 554.74, 385.40),
+    "total_value_rect": (510.00, 372.00, 550.00, 385.40),
 }
 
 # Página 2 — Consultas: nome, código família, valor (linhas dinâmicas)
 CONSULTAS = {
-    "header_y": 289.85,
+    "header_y": 290.00,
     "row_height": 22.0,
     "first_row_y": 312.00,
-    "col_nome_left": 39.90,
+    "col_nome_left": 40.00,
     "col_nome_right": 340.00,
-    "col_cod_left": 342.90,
+    "col_cod_left": 340.00,
     "col_cod_right": 450.00,
-    "col_valor_left": 504.90,
-    "col_valor_right": 566.70,
+    "col_valor_left": 500.00,
+    "col_valor_right": 550.00,
     "total_row_y": 372.00,
-    "total_value_rect": (504.90, 372.00, 566.70, 385.40),
+    "total_value_rect": (500.00, 372.00, 550.00, 385.40),
 }
 
 # Página 3 — Mensalidades: nome, código cartão, valor
 MENSALIDADES_RETRO = {
-    "header_y": 293.49,
+    "header_y": 290.00,
     "row_height": 22.0,
     "first_row_y": 312.00,
-    "col_nome_left": 39.90,
+    "col_nome_left": 40.00,
     "col_nome_right": 340.00,
-    "col_cartao_left": 342.90,
+    "col_cartao_left": 340.00,
     "col_cartao_right": 450.00,
-    "col_valor_left": 504.90,
-    "col_valor_right": 566.70,
+    "col_valor_left": 500.00,
+    "col_valor_right": 550.00,
     "total_row_y": 372.00,
-    "total_value_rect": (504.90, 372.00, 566.70, 385.40),
+    "total_value_rect": (500.00, 372.00, 550.00, 385.40),
 }
 
 MENSALIDADES = {
-    "header_y": 293.49,
+    "header_y": 290.00,
     "row_height": 22.0,
     "first_row_y": 312.00,
-    "col_nome_left": 39.90,
+    "col_nome_left": 40.00,
     "col_nome_right": 340.00,
-    "col_cartao_left": 343.11,
+    "col_cartao_left": 340.00,
     "col_cartao_right": 450.00,
-    "col_valor_left": 504.90,
-    "col_valor_right": 566.70,
+    "col_valor_left": 500.00,
+    "col_valor_right": 550.00,
     "total_row_y": 372.00,
-    "total_value_rect": (504.90, 372.00, 566.70, 385.40),
+    "total_value_rect": (500.00, 372.00, 550.00, 385.40),
 }
 
 # Página 4 — Uniodonto: nome, CPF, valor
 UNIODONTO = {
-    "header_y": 307.29,
+    "header_y": 290.00,
     "row_height": 22.0,
-    "first_row_y": 329.00,
-    "col_nome_left": 39.90,
+    "first_row_y": 312.00,
+    "col_nome_left": 40.00,
     "col_nome_right": 340.00,
-    "col_cpf_left": 342.90,
+    "col_cpf_left": 340.00,
     "col_cpf_right": 450.00,
-    "col_valor_left": 504.90,
-    "col_valor_right": 566.70,
-    "total_row_y": 394.00,
-    "total_value_rect": (504.90, 394.00, 566.70, 407.40),
+    "col_valor_left": 500.00,
+    "col_valor_right": 550.00,
+    "total_row_y": 372.00,
+    "total_value_rect": (500.00, 372.00, 550.00, 385.40),
 }
 
 # Rodapé / assinatura (fixo, não sobrescrevemos)
