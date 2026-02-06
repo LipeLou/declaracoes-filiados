@@ -103,7 +103,12 @@ def _draw_table_header(page: fitz.Page, header_y: float, row_height: float, labe
     for (left, right, text) in labels:
         _insert_centered_text(page, left, right, _cell_center_y(header_y, row_height, fontsize), text, fontsize=fontsize, bold=False)
 
-def _inserir_resumo(page: fitz.Page, d: DadosTitular, ano: int) -> None:
+def _inserir_resumo(
+    page: fitz.Page,
+    d: DadosTitular,
+    ano: int,
+    cnpjs: Optional[dict] = None,
+) -> None:
     from .loader import _formatar_cpf_exibicao
 
     rects = [
@@ -126,17 +131,16 @@ def _inserir_resumo(page: fitz.Page, d: DadosTitular, ano: int) -> None:
 
     row_y = layout.RESUMO["first_row_y"]
     linhas_resumo = []
+    cnpjs = cnpjs or {}
     if d.total_uniodonto > 0:
-        linhas_resumo.append(("Uniodonto Itajubá Mensalidades", d.total_uniodonto))
+        linhas_resumo.append(("Uniodonto Itajubá Mensalidades", d.total_uniodonto, cnpjs.get("uniodonto")))
     if d.total_consultas > 0:
-        linhas_resumo.append(("Consultas pela Unimed do Governo", d.total_consultas))
+        linhas_resumo.append(("Consultas pela Unimed do Governo", d.total_consultas, cnpjs.get("consultas")))
     if d.total_mensalidades > 0:
-        linhas_resumo.append(("Unimed Plano do Governo", d.total_mensalidades))
-    if d.total_mensalidades_retro > 0:
-        linhas_resumo.append(("Unimed Plano Retroativo", d.total_mensalidades_retro))
+        linhas_resumo.append(("Unimed Plano do Governo", d.total_mensalidades, cnpjs.get("mensalidades")))
 
     row_starts = []
-    for i, (desc, val) in enumerate(linhas_resumo):
+    for i, (desc, val, cnpj) in enumerate(linhas_resumo):
         if i >= 3:
             break
         y = row_y + i * layout.RESUMO["row_height"]
@@ -148,6 +152,15 @@ def _inserir_resumo(page: fitz.Page, d: DadosTitular, ano: int) -> None:
             _cell_center_y(y, layout.RESUMO["row_height"], 10),
             desc[:45],
             fontsize=10,
+            bold=False,
+        )
+        _insert_centered_text(
+            page,
+            layout.RESUMO["col_cnpj_left"],
+            layout.RESUMO["col_cnpj_right"],
+            _cell_center_y(y, layout.RESUMO["row_height"], 10),
+            str(cnpj or ""),
+            fontsize=9,
             bold=False,
         )
         _insert_centered_text(
@@ -395,6 +408,7 @@ def gerar_pdf_titular(
     ano: int,
     pasta_saida: str | Path,
     nome_arquivo: Optional[str] = None,
+    cnpjs: Optional[dict] = None,
 ) -> Path:
     """
     Gera o PDF do informe para um titular e salva em pasta_saida.
@@ -420,19 +434,13 @@ def gerar_pdf_titular(
     # Página 1: Resumo (sempre que houver algum gasto)
     if d.total_geral > 0:
         doc_out.insert_pdf(doc_tpl, from_page=layout.PAGE_RESUMO, to_page=layout.PAGE_RESUMO)
-        _inserir_resumo(doc_out[0], d, ano)
+        _inserir_resumo(doc_out[0], d, ano, cnpjs=cnpjs)
 
     # Página 2: Consultas (somente se houver)
     if d.tem_consultas():
         doc_out.insert_pdf(doc_tpl, from_page=layout.PAGE_CONSULTAS, to_page=layout.PAGE_CONSULTAS)
         _copiar_cabecalho(doc_out[len(doc_out) - 1], d, ano, layout.PAGE_CONSULTAS)
         _inserir_consultas(doc_out[len(doc_out) - 1], d)
-
-    # Página 3: Mensalidades Retroativas
-    if d.tem_mensalidades_retro():
-        doc_out.insert_pdf(doc_tpl, from_page=layout.PAGE_MENSALIDADES_RETRO, to_page=layout.PAGE_MENSALIDADES_RETRO)
-        _copiar_cabecalho(doc_out[len(doc_out) - 1], d, ano, layout.PAGE_MENSALIDADES_RETRO)
-        _inserir_mensalidades_retro(doc_out[len(doc_out) - 1], d)
 
     # Página 4: Mensalidades
     if d.tem_mensalidades():

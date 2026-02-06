@@ -338,11 +338,12 @@ def agrupar_por_titular(df: pd.DataFrame, uniodonto_map: Optional[Dict[str, List
             continue
 
         total_cons = grp["CONSULTA"].fillna(0).astype(float).sum()
-        total_mens = grp["MENSALIDADE"].fillna(0).astype(float).sum()
-        total_retro = (
-            grp["RETROATIVO"].fillna(0).astype(float).sum()
+        total_mens = (
+            grp["MENSALIDADE"].fillna(0).astype(float).sum()
+            + grp["RETROATIVO"].fillna(0).astype(float).sum()
             + grp["RETROATIVO RN"].fillna(0).astype(float).sum()
         )
+        total_retro = 0.0
 
         linhas_consultas: List[FilialRow] = []
         for _, r in grp.iterrows():
@@ -357,7 +358,13 @@ def agrupar_por_titular(df: pd.DataFrame, uniodonto_map: Optional[Dict[str, List
         linhas_mensalidades: List[FilialRow] = []
         for _, r in grp.iterrows():
             v = float(r["MENSALIDADE"]) if pd.notna(r["MENSALIDADE"]) else 0
-            if v > 0:
+            v_retro = 0.0
+            if pd.notna(r.get("RETROATIVO", 0)):
+                v_retro += float(r.get("RETROATIVO", 0) or 0)
+            if pd.notna(r.get("RETROATIVO RN", 0)):
+                v_retro += float(r.get("RETROATIVO RN", 0) or 0)
+            v_total = v + v_retro
+            if v_total > 0:
                 cart = r.get("CARTEIRA", "")
                 if pd.notna(cart):
                     cart = str(int(cart)) if isinstance(cart, (int, float)) else str(cart).strip()
@@ -365,28 +372,11 @@ def agrupar_por_titular(df: pd.DataFrame, uniodonto_map: Optional[Dict[str, List
                     cart = ""
                 linhas_mensalidades.append(FilialRow(
                     nome=_normalizar_nome(r["NOME"]),
-                    valor=v,
+                    valor=v_total,
                     carteira=cart,
                 ))
 
         linhas_mensalidades_retro: List[FilialRow] = []
-        for _, r in grp.iterrows():
-            v_retro = 0.0
-            if pd.notna(r.get("RETROATIVO", 0)):
-                v_retro += float(r.get("RETROATIVO", 0) or 0)
-            if pd.notna(r.get("RETROATIVO RN", 0)):
-                v_retro += float(r.get("RETROATIVO RN", 0) or 0)
-            if v_retro > 0:
-                cart = r.get("CARTEIRA", "")
-                if pd.notna(cart):
-                    cart = str(int(cart)) if isinstance(cart, (int, float)) else str(cart).strip()
-                else:
-                    cart = ""
-                linhas_mensalidades_retro.append(FilialRow(
-                    nome=_normalizar_nome(r["NOME"]),
-                    valor=v_retro,
-                    carteira=cart,
-                ))
 
         titular_parcial = DadosTitular(
             cpf_titular=cpf_tit,

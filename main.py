@@ -132,6 +132,11 @@ def main() -> int:
 
     uniodonto_path = args.planilha_uniodonto or config.get("planilha_uniodonto")
     uniodonto_map = None
+    cnpj_map = {
+        "uniodonto": config.get("cnpj_uniodonto_itajuba"),
+        "consultas": config.get("cnpj_consultas_unimed_governo"),
+        "mensalidades": config.get("cnpj_unimed_plano_governo"),
+    }
 
     log.info("Carregando planilha Unimed: %s (%d abas)", planilha_path, len(sheet_names))
     df = carregar_planilha_unimed_anual(planilha_path, sheet_names)
@@ -164,7 +169,7 @@ def main() -> int:
                 log.debug("Titular %s sem gastos; pulando.", d.cpf_titular)
                 continue
             try:
-                out_path = gerar_pdf_titular(d, template_path, ano, pasta_saida)
+                out_path = gerar_pdf_titular(d, template_path, ano, pasta_saida, cnpjs=cnpj_map)
                 gerados += 1
                 log.info("Gerado: %s", out_path.name)
             except Exception as e:
