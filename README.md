@@ -56,3 +56,7 @@ python scripts/main.py --dry-run
 python scripts/main.py --config config/irpf.yml --sheet "OUT 2025" --ano 2026
 python scripts/main.py --planilha Data/dados.xlsx --planilha-uniodonto Data/uniodonto.xlsx
 ```
+
+---
+
+**Desenvolvido para o SINTUNIFEI** | Sistema de Processamento de Declarações de IRPF

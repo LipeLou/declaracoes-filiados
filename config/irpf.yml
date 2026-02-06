@@ -1,17 +1,17 @@
 # Configuração do gerador de informes IRPF
 # Caminhos relativos ao diretório do projeto (raiz do repositório)
 
+# Ano base para a declaração
 ano_base: 2025
 
 # Pasta onde os PDFs serão salvos (criada se não existir)
-pasta_saida: ./saida_informes_irpf
+pasta_saida: ./declaracoes_irpf
 
 # Template PDF (modelo com layout das páginas)
 template_pdf: ./Data/modelo.pdf
 
-# Planilha Unimed (saída do processamento em 01_Processamento ou planilha base)
+# Planilha Unimed (mensalidades e consultas)
 planilha_unimed: ./Data/dados.xlsx
-# Abas mensais: omitir para usar JAN <ano_base> .. DEZ <ano_base>; ou listar, ex.:
-# abas_mensais: [JAN 2025, FEV 2025, MAR 2025, ABR 2025, MAI 2025, JUN 2025, JUL 2025, AGO 2025, SET 2025, OUT 2025, NOV 2025, DEZ 2025]
 
+# Planilha Uniodonto
 planilha_uniodonto: ./Data/uniodonto.xlsx
