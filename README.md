@@ -1,5 +1,9 @@
 # Declarações de Filiados (IRPF)
 
+[![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Pandas](https://img.shields.io/badge/Pandas-1.3%2B-150458?logo=pandas&logoColor=white)](https://pandas.pydata.org/)
+[![Licença: MIT](https://img.shields.io/badge/Licen%C3%A7a-MIT-green.svg)](LICENSE)
+
 Gerador de informes anuais de despesas médicas para declaração de IRPF, com base em planilhas da Unimed e (opcionalmente) da Uniodonto. O processamento consolida 12 abas mensais, soma os valores e gera um PDF por titular usando um template padronizado.
 
 ## Visão geral
