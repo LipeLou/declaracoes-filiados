@@ -11,6 +11,7 @@ Gerador de informes anuais de despesas médicas para declaração de IRPF, com b
 - Leitura de 12 abas mensais por planilha (Unimed e Uniodonto)
 - Consolidação anual por titular (CPF)
 - Detalhes agregados por pessoa (nome + código/carteira/CPF)
+- Valores retroativos (RETROATIVO e RETROATIVO RN) somados à mensalidade
 - Validação automática de inconsistências
 - Geração de PDFs com layout padronizado
 
@@ -44,6 +45,8 @@ Edite `config/irpf.yml` para apontar para:
 - `pasta_saida`: diretório de saída dos PDFs
 - `ano_base`: ano-base do informe (usado para gerar abas JAN \<ano\> .. DEZ \<ano\>)
 - `abas_mensais`: (opcional) lista explícita de nomes de abas
+
+Observação: as colunas `RETROATIVO` e `RETROATIVO RN` da Unimed são somadas à mensalidade e exibidas na tabela de Mensalidades (não há página de retroativos separada).
 
 ### Abas mensais (importante)
 
