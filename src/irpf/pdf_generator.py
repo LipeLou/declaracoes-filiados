@@ -46,6 +46,7 @@ def _insert_centered_text(
     text: str,
     fontsize: float = 10,
     bold: bool = False,
+    auto_shrink: bool = True,
 ) -> None:
     """Insere texto centralizado entre left/right com ajuste de fonte."""
     if not text:
@@ -53,7 +54,7 @@ def _insert_centered_text(
     text = str(text).upper()
     cell_width = max(right - left, 1)
     width = fitz.get_text_length(text, fontname="helv", fontsize=fontsize)
-    if width > cell_width - 4:
+    if auto_shrink and width > cell_width - 4:
         fontsize = max(7, fontsize * (cell_width - 4) / max(width, 1))
         width = fitz.get_text_length(text, fontname="helv", fontsize=fontsize)
     x = left + (cell_width - width) / 2
@@ -78,10 +79,27 @@ def _insert_right_text(
     text = str(text).upper()
     cell_width = max(right - left, 1)
     width = fitz.get_text_length(text, fontname="helv", fontsize=fontsize)
-    if width > cell_width - (2 * padding):
-        fontsize = max(7, fontsize * (cell_width - (2 * padding)) / max(width, 1))
-        width = fitz.get_text_length(text, fontname="helv", fontsize=fontsize)
     x = right - width - padding
+    if bold:
+        _insert_bold(page, x, y, text, fontsize=fontsize)
+    else:
+        page.insert_text((x, y), text, fontsize=fontsize, fontname="helv")
+
+def _insert_left_text(
+    page: fitz.Page,
+    left: float,
+    right: float,
+    y: float,
+    text: str,
+    fontsize: float = 10,
+    bold: bool = False,
+    padding: float = 35,
+) -> None:
+    """Insere texto alinhado à esquerda com padding fixo."""
+    if not text:
+        return
+    text = str(text).upper()
+    x = left + padding
     if bold:
         _insert_bold(page, x, y, text, fontsize=fontsize)
     else:
@@ -98,10 +116,21 @@ def _cell_center_y(row_y: float, row_height: float, fontsize: float) -> float:
     # Centraliza verticalmente a linha de base do texto
     return row_y + (row_height / 2) + (fontsize * 0.35)
 
-def _draw_table_header(page: fitz.Page, header_y: float, row_height: float, labels: list[tuple], fontsize: float = 10) -> None:
+def _draw_table_header(
+    page: fitz.Page,
+    header_y: float,
+    row_height: float,
+    labels: list[tuple],
+    fontsize: float = 10,
+    align_first: str = "center",
+) -> None:
     """Renderiza o cabeçalho de uma tabela."""
-    for (left, right, text) in labels:
-        _insert_centered_text(page, left, right, _cell_center_y(header_y, row_height, fontsize), text, fontsize=fontsize, bold=False)
+    for i, (left, right, text) in enumerate(labels):
+        align = align_first if i == 0 else "center"
+        if align == "left":
+            _insert_left_text(page, left, right, _cell_center_y(header_y, row_height, fontsize), text, fontsize=fontsize, bold=True)
+        else:
+            _insert_centered_text(page, left, right, _cell_center_y(header_y, row_height, fontsize), text, fontsize=fontsize, bold=True)
 
 def _inserir_resumo(
     page: fitz.Page,
@@ -125,8 +154,8 @@ def _inserir_resumo(
         page.add_redact_annot(r, text="", fill=(1, 1, 1))
     page.apply_redactions()
 
-    page.insert_text((layout.HEADER["nome_value"][0], layout.HEADER["nome_value"][1] + 11), d.nome_titular[:50], fontsize=10, fontname="helv")
-    page.insert_text((layout.HEADER["cpf_value"][0], layout.HEADER["cpf_value"][1] + 11), _formatar_cpf_exibicao(d.cpf_titular), fontsize=10, fontname="helv")
+    page.insert_text((layout.HEADER["nome_value"][0], layout.HEADER["nome_value"][1] + 11), d.nome_titular[:50], fontsize=11, fontname="helv")
+    page.insert_text((layout.HEADER["cpf_value"][0], layout.HEADER["cpf_value"][1] + 11), _formatar_cpf_exibicao(d.cpf_titular), fontsize=11, fontname="helv")
     page.insert_text((layout.HEADER["ano"][0], layout.HEADER["ano"][1] + 12), f"RENDA - ANO BASE {ano}", fontsize=12, fontname="helv")
 
     row_y = layout.RESUMO["first_row_y"]
@@ -145,7 +174,7 @@ def _inserir_resumo(
             break
         y = row_y + i * layout.RESUMO["row_height"]
         row_starts.append(y)
-        _insert_centered_text(
+        _insert_left_text(
             page,
             layout.RESUMO["col_desc_left"],
             layout.RESUMO["col_desc_right"],
@@ -160,7 +189,7 @@ def _inserir_resumo(
             layout.RESUMO["col_cnpj_right"],
             _cell_center_y(y, layout.RESUMO["row_height"], 10),
             str(cnpj or ""),
-            fontsize=9,
+            fontsize=10,
             bold=False,
         )
         _insert_centered_text(
@@ -171,6 +200,7 @@ def _inserir_resumo(
             _fmt_valor(val),
             fontsize=10,
             bold=False,
+            auto_shrink=False,
         )
 
     total_y = _compute_total_row_y(layout.RESUMO["first_row_y"], layout.RESUMO["row_height"], row_starts)
@@ -182,8 +212,9 @@ def _inserir_resumo(
         _fmt_valor(d.total_geral),
         fontsize=10,
         bold=True,
+        auto_shrink=False,
     )
-    _insert_centered_text(
+    _insert_left_text(
         page,
         layout.RESUMO["col_desc_left"],
         layout.RESUMO["col_desc_right"],
@@ -202,7 +233,8 @@ def _inserir_resumo(
             (layout.RESUMO["col_cnpj_left"], layout.RESUMO["col_cnpj_right"], "C N P J / C P F"),
             (layout.RESUMO["col_valor_left"], layout.RESUMO["col_valor_right"], "VALOR"),
         ],
-        fontsize=9,
+        fontsize=10,
+        align_first="left",
     )
     _draw_table_lines(
         page,
@@ -231,13 +263,13 @@ def _inserir_consultas(page: fitz.Page, d: DadosTitular) -> None:
 
     for i, lin in enumerate(d.linhas_consultas):
         y = row_y + i * cfg["row_height"]
-        _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
+        _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_cod_left"], cfg["col_cod_right"], _cell_center_y(y, cfg["row_height"], 10), lin.codigo_familia[:15], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(y, cfg["row_height"], 10), _fmt_valor(lin.valor), fontsize=10, bold=False)
 
     total_y = _compute_total_row_y(cfg["first_row_y"], cfg["row_height"], row_starts)
     _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(total_y, cfg["row_height"], 10), _fmt_valor(d.total_consultas), fontsize=10, bold=True)
-    _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
+    _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
     row_starts.append(total_y)
     _draw_table_header(
         page,
@@ -248,7 +280,8 @@ def _inserir_consultas(page: fitz.Page, d: DadosTitular) -> None:
             (cfg["col_cod_left"], cfg["col_cod_right"], "CÓDIGO FAMÍLIA"),
             (cfg["col_valor_left"], cfg["col_valor_right"], "VALOR R$"),
         ],
-        fontsize=9,
+        fontsize=10,
+        align_first="left",
     )
     _draw_table_lines(
         page,
@@ -272,13 +305,13 @@ def _inserir_mensalidades(page: fitz.Page, d: DadosTitular) -> None:
 
     for i, lin in enumerate(d.linhas_mensalidades):
         y = row_y + i * cfg["row_height"]
-        _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
+        _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_cartao_left"], cfg["col_cartao_right"], _cell_center_y(y, cfg["row_height"], 10), lin.carteira[:18], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(y, cfg["row_height"], 10), _fmt_valor(lin.valor), fontsize=10, bold=False)
 
     total_y = _compute_total_row_y(cfg["first_row_y"], cfg["row_height"], row_starts)
     _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(total_y, cfg["row_height"], 10), _fmt_valor(d.total_mensalidades), fontsize=10, bold=True)
-    _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
+    _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
     row_starts.append(total_y)
     _draw_table_header(
         page,
@@ -289,7 +322,8 @@ def _inserir_mensalidades(page: fitz.Page, d: DadosTitular) -> None:
             (cfg["col_cartao_left"], cfg["col_cartao_right"], "CÓDIGO CARTÃO"),
             (cfg["col_valor_left"], cfg["col_valor_right"], "VALOR R$"),
         ],
-        fontsize=9,
+        fontsize=10,
+        align_first="left",
     )
     _draw_table_lines(
         page,
@@ -313,13 +347,13 @@ def _inserir_mensalidades_retro(page: fitz.Page, d: DadosTitular) -> None:
 
     for i, lin in enumerate(d.linhas_mensalidades_retro):
         y = row_y + i * cfg["row_height"]
-        _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
+        _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_cartao_left"], cfg["col_cartao_right"], _cell_center_y(y, cfg["row_height"], 10), lin.carteira[:18], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(y, cfg["row_height"], 10), _fmt_valor(lin.valor), fontsize=10, bold=False)
 
     total_y = _compute_total_row_y(cfg["first_row_y"], cfg["row_height"], row_starts)
     _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(total_y, cfg["row_height"], 10), _fmt_valor(d.total_mensalidades_retro), fontsize=10, bold=True)
-    _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
+    _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
     row_starts.append(total_y)
     _draw_table_header(
         page,
@@ -330,7 +364,8 @@ def _inserir_mensalidades_retro(page: fitz.Page, d: DadosTitular) -> None:
             (cfg["col_cartao_left"], cfg["col_cartao_right"], "CÓDIGO CARTÃO"),
             (cfg["col_valor_left"], cfg["col_valor_right"], "VALOR R$"),
         ],
-        fontsize=9,
+        fontsize=10,
+        align_first="left",
     )
     _draw_table_lines(
         page,
@@ -356,13 +391,13 @@ def _inserir_uniodonto(page: fitz.Page, d: DadosTitular) -> None:
 
     for i, lin in enumerate(d.linhas_uniodonto):
         y = row_y + i * cfg["row_height"]
-        _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
+        _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_cpf_left"], cfg["col_cpf_right"], _cell_center_y(y, cfg["row_height"], 10), _formatar_cpf_exibicao(lin.cpf) if lin.cpf else "", fontsize=10, bold=False)
         _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(y, cfg["row_height"], 10), _fmt_valor(lin.valor), fontsize=10, bold=False)
 
     total_y = _compute_total_row_y(cfg["first_row_y"], cfg["row_height"], row_starts)
     _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(total_y, cfg["row_height"], 10), _fmt_valor(d.total_uniodonto), fontsize=10, bold=True)
-    _insert_right_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
+    _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
     row_starts.append(total_y)
     _draw_table_header(
         page,
@@ -373,7 +408,8 @@ def _inserir_uniodonto(page: fitz.Page, d: DadosTitular) -> None:
             (cfg["col_cpf_left"], cfg["col_cpf_right"], "CPF"),
             (cfg["col_valor_left"], cfg["col_valor_right"], "VALOR R$"),
         ],
-        fontsize=9,
+        fontsize=10,
+        align_first="left",
     )
     _draw_table_lines(
         page,
@@ -394,8 +430,8 @@ def _copiar_cabecalho(page_dest: fitz.Page, d: DadosTitular, ano: int, page_inde
         page_dest.add_redact_annot(r, text="", fill=(1, 1, 1))
     page_dest.apply_redactions()
 
-    page_dest.insert_text((header["nome_value"][0], header["nome_value"][1] + 11), d.nome_titular[:50], fontsize=10, fontname="helv")
-    page_dest.insert_text((header["cpf_value"][0], header["cpf_value"][1] + 11), _formatar_cpf_exibicao(d.cpf_titular), fontsize=10, fontname="helv")
+    page_dest.insert_text((header["nome_value"][0], header["nome_value"][1] + 11), d.nome_titular[:50], fontsize=11, fontname="helv")
+    page_dest.insert_text((header["cpf_value"][0], header["cpf_value"][1] + 11), _formatar_cpf_exibicao(d.cpf_titular), fontsize=11, fontname="helv")
 
     page_dest.add_redact_annot(header["ano"], text="", fill=(1, 1, 1))
     page_dest.apply_redactions()

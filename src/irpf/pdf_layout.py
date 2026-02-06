@@ -66,13 +66,13 @@ RESUMO = {
     "row_height": 22.0,
     "first_row_y": 312.00,
     "col_desc_left": 40.00,
-    "col_desc_right": 360.00,
+    "col_desc_right": 340.00,
     "col_cnpj_left": 365.00,
     "col_cnpj_right": 450.00,
-    "col_valor_left": 510.00,
-    "col_valor_right": 550.00,
+    "col_valor_left": 500.00,
+    "col_valor_right": 560.00,
     "total_row_y": 372.00,
-    "total_value_rect": (510.00, 372.00, 550.00, 385.40),
+    "total_value_rect": (500.00, 372.00, 560.00, 385.40),
 }
 
 # Página 2 — Consultas: nome, código família, valor (linhas dinâmicas)
@@ -84,10 +84,10 @@ CONSULTAS = {
     "col_nome_right": 340.00,
     "col_cod_left": 340.00,
     "col_cod_right": 450.00,
-    "col_valor_left": 500.00,
-    "col_valor_right": 550.00,
+    "col_valor_left": 490.00,
+    "col_valor_right": 560.00,
     "total_row_y": 372.00,
-    "total_value_rect": (500.00, 372.00, 550.00, 385.40),
+    "total_value_rect": (490.00, 372.00, 560.00, 385.40),
 }
 
 # Página 3 — Mensalidades: nome, código cartão, valor
@@ -99,10 +99,10 @@ MENSALIDADES_RETRO = {
     "col_nome_right": 340.00,
     "col_cartao_left": 340.00,
     "col_cartao_right": 450.00,
-    "col_valor_left": 500.00,
-    "col_valor_right": 550.00,
+    "col_valor_left": 490.00,
+    "col_valor_right": 560.00,
     "total_row_y": 372.00,
-    "total_value_rect": (500.00, 372.00, 550.00, 385.40),
+    "total_value_rect": (490.00, 372.00, 560.00, 385.40),
 }
 
 MENSALIDADES = {
@@ -113,10 +113,10 @@ MENSALIDADES = {
     "col_nome_right": 340.00,
     "col_cartao_left": 340.00,
     "col_cartao_right": 450.00,
-    "col_valor_left": 500.00,
-    "col_valor_right": 550.00,
+    "col_valor_left": 490.00,
+    "col_valor_right": 560.00,
     "total_row_y": 372.00,
-    "total_value_rect": (500.00, 372.00, 550.00, 385.40),
+    "total_value_rect": (490.00, 372.00, 560.00, 385.40),
 }
 
 # Página 4 — Uniodonto: nome, CPF, valor
@@ -128,10 +128,10 @@ UNIODONTO = {
     "col_nome_right": 340.00,
     "col_cpf_left": 340.00,
     "col_cpf_right": 450.00,
-    "col_valor_left": 500.00,
-    "col_valor_right": 550.00,
+    "col_valor_left": 490.00,
+    "col_valor_right": 560.00,
     "total_row_y": 372.00,
-    "total_value_rect": (500.00, 372.00, 550.00, 385.40),
+    "total_value_rect": (490.00, 372.00, 560.00, 385.40),
 }
 
 # Rodapé / assinatura (fixo, não sobrescrevemos)
