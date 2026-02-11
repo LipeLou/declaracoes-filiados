@@ -214,7 +214,7 @@ def carregar_planilha_uniodonto(
     if not path.exists():
         raise FileNotFoundError(f"Planilha Uniodonto não encontrada: {path}")
 
-    kwargs = {}
+    kwargs = {"skiprows": 18}
     if sheet_name is not None:
         kwargs["sheet_name"] = sheet_name
 
