@@ -6,6 +6,7 @@ from .loader import (
     carregar_planilha_unimed_anual,
     carregar_planilha_uniodonto,
     carregar_planilha_uniodonto_anual,
+    carregar_planilha_unimed_bh,
     agrupar_por_titular,
     obter_nomes_abas_anual,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "carregar_planilha_unimed_anual",
     "carregar_planilha_uniodonto",
     "carregar_planilha_uniodonto_anual",
+    "carregar_planilha_unimed_bh",
     "agrupar_por_titular",
     "obter_nomes_abas_anual",
     "DadosTitular",

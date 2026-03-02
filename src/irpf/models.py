@@ -25,11 +25,13 @@ class DadosTitular:
     total_mensalidades: float
     total_mensalidades_retro: float
     total_uniodonto: float
+    total_unimed_bh: float
     # Detalhes para cada página
     linhas_consultas: List[FilialRow] = field(default_factory=list)
     linhas_mensalidades: List[FilialRow] = field(default_factory=list)
     linhas_mensalidades_retro: List[FilialRow] = field(default_factory=list)
     linhas_uniodonto: List[FilialRow] = field(default_factory=list)
+    linhas_unimed_bh: List[FilialRow] = field(default_factory=list)
 
     @property
     def total_geral(self) -> float:
@@ -38,6 +40,7 @@ class DadosTitular:
             + self.total_mensalidades
             + self.total_mensalidades_retro
             + self.total_uniodonto
+            + self.total_unimed_bh
         )
 
     def tem_consultas(self) -> bool:
@@ -51,3 +54,6 @@ class DadosTitular:
 
     def tem_uniodonto(self) -> bool:
         return self.total_uniodonto > 0
+
+    def tem_unimed_bh(self) -> bool:
+        return self.total_unimed_bh > 0

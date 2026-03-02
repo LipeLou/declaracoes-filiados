@@ -79,4 +79,13 @@ def validar_totais(titulares: List[DadosTitular]) -> ResultadoValidacao:
                 obtido=soma_odonto,
             ))
 
+        soma_unimed_bh = sum(l.valor for l in d.linhas_unimed_bh)
+        if abs(soma_unimed_bh - d.total_unimed_bh) > 0.01:
+            inconsistencias.append(Inconsistencia(
+                cpf_titular=d.cpf_titular,
+                mensagem="Soma Unimed BH difere do total",
+                esperado=d.total_unimed_bh,
+                obtido=soma_unimed_bh,
+            ))
+
     return ResultadoValidacao(ok=len(inconsistencias) == 0, inconsistencias=inconsistencias)

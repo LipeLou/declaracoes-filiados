@@ -4,11 +4,12 @@
 [![Pandas](https://img.shields.io/badge/Pandas-1.3%2B-150458?logo=pandas&logoColor=white)](https://pandas.pydata.org/)
 [![Licença: MIT](https://img.shields.io/badge/Licen%C3%A7a-MIT-green.svg)](LICENSE)
 
-Gerador de informes anuais de despesas médicas para declaração de IRPF, com base em planilhas da Unimed e (opcionalmente) da Uniodonto. O processamento consolida 12 abas mensais, soma os valores e gera um PDF por titular usando um template padronizado.
+Gerador de informes anuais de despesas médicas para declaração de IRPF, com base em planilhas da Unimed, da Uniodonto (opcional) e da Unimed BH (opcional). O processamento consolida os valores e gera um PDF por titular usando um template padronizado.
 
 ## Visão geral
 
 - Leitura de 12 abas mensais por planilha (Unimed e Uniodonto)
+- Leitura opcional da planilha Unimed BH (aba única com total por titular)
 - Consolidação anual por titular (CPF)
 - Detalhes agregados por pessoa (nome + código/carteira/CPF)
 - Valores retroativos (RETROATIVO e RETROATIVO RN) somados à mensalidade
@@ -41,6 +42,7 @@ Edite `config/irpf.yml` para apontar para:
 
 - `planilha_unimed`: planilha principal (Excel, com 12 abas mensais)
 - `planilha_uniodonto`: planilha da Uniodonto (opcional, 12 abas mensais)
+- `planilha_unimed_bh`: planilha Unimed BH (opcional, aba única com colunas `NOME`, `CPF` e `TOTAL`)
 - `template_pdf`: modelo do informe (PDF)
 - `pasta_saida`: diretório de saída dos PDFs
 - `ano_base`: ano-base do informe (usado para gerar abas JAN \<ano\> .. DEZ \<ano\>)
@@ -76,6 +78,7 @@ Parâmetros úteis:
 python main.py --dry-run
 python main.py --config config/irpf.yml --sheet "OUT 2025" --ano 2026
 python main.py --planilha Data/dados.xlsx --planilha-uniodonto Data/uniodonto.xlsx
+python main.py --planilha-unimed-bh Data/unimedbh.xlsx
 ```
 
 ---

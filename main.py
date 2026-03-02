@@ -23,6 +23,7 @@ import yaml
 from src.irpf.loader import (
     carregar_planilha_unimed_anual,
     carregar_planilha_uniodonto_anual,
+    carregar_planilha_unimed_bh,
     agrupar_por_titular,
     obter_nomes_abas_anual,
 )
@@ -71,6 +72,11 @@ def main() -> int:
         "--planilha-uniodonto",
         type=Path,
         help="Planilha Uniodonto (opcional)",
+    )
+    parser.add_argument(
+        "--planilha-unimed-bh",
+        type=Path,
+        help="Planilha Unimed BH (opcional, aba única)",
     )
     parser.add_argument(
         "--sheet",
@@ -131,11 +137,14 @@ def main() -> int:
         return 1
 
     uniodonto_path = args.planilha_uniodonto or config.get("planilha_uniodonto")
+    unimed_bh_path = args.planilha_unimed_bh or config.get("planilha_unimed_bh")
     uniodonto_map = None
+    unimed_bh_map = None
     cnpj_map = {
         "uniodonto": config.get("cnpj_uniodonto_itajuba"),
         "consultas": config.get("cnpj_consultas_unimed_governo"),
         "mensalidades": config.get("cnpj_unimed_plano_governo"),
+        "unimed_bh": config.get("cnpj_unimed_bh"),
     }
 
     log.info("Carregando planilha Unimed: %s (%d abas)", planilha_path, len(sheet_names))
@@ -149,7 +158,16 @@ def main() -> int:
             return 1
         log.info("Carregando Uniodonto: %s (%d abas)", uniodonto_path, len(sheet_names))
         uniodonto_map = carregar_planilha_uniodonto_anual(uniodonto_path, sheet_names)
-    titulares = agrupar_por_titular(df, uniodonto_map=uniodonto_map)
+    if unimed_bh_path:
+        unimed_bh_path = Path(unimed_bh_path)
+        if not unimed_bh_path.is_absolute():
+            unimed_bh_path = ROOT / unimed_bh_path
+        if not unimed_bh_path.exists():
+            log.error("Planilha Unimed BH não encontrada: %s", unimed_bh_path)
+            return 1
+        log.info("Carregando Unimed BH: %s", unimed_bh_path)
+        unimed_bh_map = carregar_planilha_unimed_bh(unimed_bh_path, skiprows=1)
+    titulares = agrupar_por_titular(df, uniodonto_map=uniodonto_map, unimed_bh_map=unimed_bh_map)
     log.info("Agrupados %d titulares por CPF.", len(titulares))
 
     resultado = validar_totais(titulares)
@@ -165,7 +183,13 @@ def main() -> int:
     erros = 0
     try:
         for d in titulares:
-            if d.total_geral <= 0 and not d.linhas_consultas and not d.linhas_mensalidades and not d.linhas_uniodonto:
+            if (
+                d.total_geral <= 0
+                and not d.linhas_consultas
+                and not d.linhas_mensalidades
+                and not d.linhas_uniodonto
+                and not d.linhas_unimed_bh
+            ):
                 log.debug("Titular %s sem gastos; pulando.", d.cpf_titular)
                 continue
             try:

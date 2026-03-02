@@ -146,7 +146,7 @@ def _inserir_resumo(
         layout.RESUMO["total_value_rect"],
         layout.HEADER["ano"],
     ]
-    for i in range(4):
+    for i in range(5):
         y = layout.RESUMO["first_row_y"] + i * layout.RESUMO["row_height"]
         rects.append((layout.RESUMO["col_desc_left"], y, layout.RESUMO["col_valor_right"], y + layout.RESUMO["row_height"]))
 
@@ -167,10 +167,12 @@ def _inserir_resumo(
         linhas_resumo.append(("Consultas pela Unimed do Governo", d.total_consultas, cnpjs.get("consultas")))
     if d.total_mensalidades > 0:
         linhas_resumo.append(("Unimed Plano do Governo", d.total_mensalidades, cnpjs.get("mensalidades")))
+    if d.total_unimed_bh > 0:
+        linhas_resumo.append(("Unimed BH", d.total_unimed_bh, cnpjs.get("unimed_bh")))
 
     row_starts = []
     for i, (desc, val, cnpj) in enumerate(linhas_resumo):
-        if i >= 3:
+        if i >= 4:
             break
         y = row_y + i * layout.RESUMO["row_height"]
         row_starts.append(y)
@@ -420,6 +422,50 @@ def _inserir_uniodonto(page: fitz.Page, d: DadosTitular) -> None:
     )
 
 
+def _inserir_unimed_bh(page: fitz.Page, d: DadosTitular) -> None:
+    from .loader import _formatar_cpf_exibicao
+
+    cfg = layout.UNIMED_BH
+    row_y = cfg["first_row_y"]
+    row_starts = []
+    for i, lin in enumerate(d.linhas_unimed_bh):
+        y = row_y + i * cfg["row_height"]
+        page.add_redact_annot((cfg["col_nome_left"], y, cfg["col_valor_right"], y + cfg["row_height"]), text="", fill=(1, 1, 1))
+        row_starts.append(y)
+    page.add_redact_annot(cfg["total_value_rect"], text="", fill=(1, 1, 1))
+    page.apply_redactions()
+
+    for i, lin in enumerate(d.linhas_unimed_bh):
+        y = row_y + i * cfg["row_height"]
+        _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(y, cfg["row_height"], 10), lin.nome[:45], fontsize=10, bold=False)
+        _insert_centered_text(page, cfg["col_cpf_left"], cfg["col_cpf_right"], _cell_center_y(y, cfg["row_height"], 10), _formatar_cpf_exibicao(lin.cpf) if lin.cpf else "", fontsize=10, bold=False)
+        _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(y, cfg["row_height"], 10), _fmt_valor(lin.valor), fontsize=10, bold=False)
+
+    total_y = _compute_total_row_y(cfg["first_row_y"], cfg["row_height"], row_starts)
+    _insert_centered_text(page, cfg["col_valor_left"], cfg["col_valor_right"], _cell_center_y(total_y, cfg["row_height"], 10), _fmt_valor(d.total_unimed_bh), fontsize=10, bold=True)
+    _insert_left_text(page, cfg["col_nome_left"], cfg["col_nome_right"], _cell_center_y(total_y, cfg["row_height"], 10), "TOTAL DE GASTOS", fontsize=10, bold=True)
+    row_starts.append(total_y)
+    _draw_table_header(
+        page,
+        cfg["header_y"],
+        cfg["row_height"],
+        [
+            (cfg["col_nome_left"], cfg["col_nome_right"], "Mensalidade UNIMED BH"),
+            (cfg["col_cpf_left"], cfg["col_cpf_right"], "CPF"),
+            (cfg["col_valor_left"], cfg["col_valor_right"], "VALOR R$"),
+        ],
+        fontsize=10,
+        align_first="left",
+    )
+    _draw_table_lines(
+        page,
+        [cfg["col_nome_left"], cfg["col_cpf_left"], cfg["col_valor_left"], cfg["col_valor_right"]],
+        row_starts,
+        cfg["row_height"],
+        header_y=cfg["header_y"],
+    )
+
+
 def _copiar_cabecalho(page_dest: fitz.Page, d: DadosTitular, ano: int, page_index: int) -> None:
     """Sobrescreve apenas cabeçalho (nome, CPF) na página."""
     from .loader import _formatar_cpf_exibicao
@@ -455,7 +501,13 @@ def gerar_pdf_titular(
     pasta_saida = Path(pasta_saida)
     pasta_saida.mkdir(parents=True, exist_ok=True)
 
-    if d.total_geral <= 0 and not d.linhas_consultas and not d.linhas_mensalidades and not d.linhas_uniodonto:
+    if (
+        d.total_geral <= 0
+        and not d.linhas_consultas
+        and not d.linhas_mensalidades
+        and not d.linhas_uniodonto
+        and not d.linhas_unimed_bh
+    ):
         raise ValueError("Titular sem nenhum gasto; não gerar PDF.")
 
     if nome_arquivo is None:
@@ -489,6 +541,12 @@ def gerar_pdf_titular(
         doc_out.insert_pdf(doc_tpl, from_page=layout.PAGE_UNIODONTO, to_page=layout.PAGE_UNIODONTO)
         _copiar_cabecalho(doc_out[len(doc_out) - 1], d, ano, layout.PAGE_UNIODONTO)
         _inserir_uniodonto(doc_out[len(doc_out) - 1], d)
+
+    # Página 6: Unimed BH
+    if d.tem_unimed_bh():
+        doc_out.insert_pdf(doc_tpl, from_page=layout.PAGE_UNIMED_BH, to_page=layout.PAGE_UNIMED_BH)
+        _copiar_cabecalho(doc_out[len(doc_out) - 1], d, ano, layout.PAGE_UNIMED_BH)
+        _inserir_unimed_bh(doc_out[len(doc_out) - 1], d)
 
     # Se não incluímos nenhuma página (caso limite), não faz sentido gerar PDF vazio
     if len(doc_out) == 0:
