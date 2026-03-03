@@ -19,6 +19,7 @@ Gerador de informes anuais de despesas médicas para declaração de IRPF, com b
 ## Estrutura do projeto
 
 - `main.py`: execução em lote
+- `src/irpf/gerar_relatorio_uniodonto.py`: relatório anual Uniodonto em Excel (famílias separadas)
 - `src/irpf/`: leitura, validação e geração de PDFs
 - `config/irpf.yml`: configuração (caminhos, ano_base, abas opcionais)
 - `Data/`: planilhas e template PDF (mantidos localmente)
@@ -79,6 +80,12 @@ python main.py --dry-run
 python main.py --config config/irpf.yml --sheet "OUT 2025" --ano 2026
 python main.py --planilha Data/dados.xlsx --planilha-uniodonto Data/uniodonto.xlsx
 python main.py --planilha-unimed-bh Data/unimedbh.xlsx
+```
+
+Relatório Uniodonto (Excel com Nome, Cpf, JAN..DEZ, TOTAL, famílias separadas):
+
+```bash
+python src/irpf/gerar_relatorio_uniodonto.py -o relatorio_uniodonto_2025.xlsx
 ```
 
 ---
