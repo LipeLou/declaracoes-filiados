@@ -46,6 +46,7 @@ Edite `config/irpf.yml` para apontar para:
 - `planilha_unimed_bh`: planilha Unimed BH (opcional, aba única com colunas `NOME`, `CPF` e `TOTAL`)
 - `template_pdf`: modelo do informe (PDF)
 - `pasta_saida`: diretório de saída dos PDFs
+- `incluir_cpf_no_nome`: (opcional, padrão: `false`) incluir CPF no nome dos arquivos; `false` → `NOME_IRPF<ANO>.pdf`, `true` → `NOME_CPF_IRPF<ANO>.pdf`
 - `ano_base`: ano-base do informe (usado para gerar abas JAN \<ano\> .. DEZ \<ano\>)
 - `abas_mensais`: (opcional) lista explícita de nomes de abas
 
@@ -80,6 +81,7 @@ python main.py --dry-run
 python main.py --config config/irpf.yml --sheet "OUT 2025" --ano 2026
 python main.py --planilha Data/dados.xlsx --planilha-uniodonto Data/uniodonto.xlsx
 python main.py --planilha-unimed-bh Data/unimedbh.xlsx
+python main.py --incluir-cpf-no-nome  # inclui CPF no nome dos PDFs (sobrescreve config)
 ```
 
 Relatório Uniodonto (Excel com Nome, Cpf, JAN..DEZ, TOTAL, famílias separadas):

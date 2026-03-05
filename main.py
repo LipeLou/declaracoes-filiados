@@ -4,7 +4,7 @@
 Script principal: execução em lote do gerador de informes IRPF.
 Lê configuração (config/irpf.yml), planilhas Unimed, valida totais,
 gera um PDF por titular em pasta configurável.
-Nome dos arquivos: NOME_DO_FILIADO_CPF_IRPF<ANO>.pdf
+Nome dos arquivos: NOME_DO_FILIADO_IRPF<ANO>.pdf
 """
 
 import argparse
@@ -95,6 +95,11 @@ def main() -> int:
         action="store_true",
         help="Apenas carregar e validar, sem gerar PDFs",
     )
+    parser.add_argument(
+        "--incluir-cpf-no-nome",
+        action="store_true",
+        help="Incluir CPF no nome dos arquivos PDF (sobrescreve config)",
+    )
     args = parser.parse_args()
 
     config_path = args.config
@@ -146,6 +151,9 @@ def main() -> int:
         "mensalidades": config.get("cnpj_unimed_plano_governo"),
         "unimed_bh": config.get("cnpj_unimed_bh"),
     }
+    incluir_cpf_no_nome = config.get("incluir_cpf_no_nome", False)
+    if args.incluir_cpf_no_nome:
+        incluir_cpf_no_nome = True
 
     log.info("Carregando planilha Unimed: %s (%d abas)", planilha_path, len(sheet_names))
     df = carregar_planilha_unimed_anual(planilha_path, sheet_names)
@@ -193,7 +201,7 @@ def main() -> int:
                 log.debug("Titular %s sem gastos; pulando.", d.cpf_titular)
                 continue
             try:
-                out_path = gerar_pdf_titular(d, template_path, ano, pasta_saida, cnpjs=cnpj_map)
+                out_path = gerar_pdf_titular(d, template_path, ano, pasta_saida, cnpjs=cnpj_map, incluir_cpf_no_nome=incluir_cpf_no_nome)
                 gerados += 1
                 log.info("Gerado: %s", out_path.name)
             except Exception as e:

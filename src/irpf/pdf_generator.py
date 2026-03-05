@@ -491,10 +491,12 @@ def gerar_pdf_titular(
     pasta_saida: str | Path,
     nome_arquivo: Optional[str] = None,
     cnpjs: Optional[dict] = None,
+    incluir_cpf_no_nome: bool = False,
 ) -> Path:
     """
     Gera o PDF do informe para um titular e salva em pasta_saida.
-    Nome do arquivo: NOME_DO_FILIADO_CPF_IRPF<ANO>.pdf (espaços e caracteres especiais normalizados).
+    Nome do arquivo: NOME_DO_FILIADO_IRPF<ANO>.pdf ou NOME_DO_FILIADO_CPF_IRPF<ANO>.pdf,
+    conforme incluir_cpf_no_nome (espaços e caracteres especiais normalizados).
     Retorna o Path do arquivo gerado.
     """
     template_path = Path(template_path)
@@ -513,8 +515,11 @@ def gerar_pdf_titular(
     if nome_arquivo is None:
         nome_safe = re.sub(r"[^\w\s-]", "", d.nome_titular)
         nome_safe = re.sub(r"\s+", "_", nome_safe).strip("_") or "Titular"
-        cpf_safe = d.cpf_titular.replace(".", "").replace("-", "").replace("/", "")
-        nome_arquivo = f"{nome_safe}_{cpf_safe}_IRPF{ano}.pdf"
+        if incluir_cpf_no_nome:
+            cpf_safe = d.cpf_titular.replace(".", "").replace("-", "").replace("/", "")
+            nome_arquivo = f"{nome_safe}_{cpf_safe}_IRPF{ano}.pdf"
+        else:
+            nome_arquivo = f"{nome_safe}_IRPF{ano}.pdf"
 
     doc_tpl = fitz.open(template_path)
     doc_out = fitz.open()

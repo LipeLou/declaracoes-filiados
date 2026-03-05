@@ -7,6 +7,9 @@ ano_base: 2025
 # Pasta onde os PDFs serão salvos (criada se não existir)
 pasta_saida: ./declaracoes_irpf
 
+# Incluir CPF no nome do arquivo PDF? true: NOME_CPF_IRPF<ANO>.pdf | false: NOME_IRPF<ANO>.pdf
+incluir_cpf_no_nome: True
+
 # Template PDF (modelo com layout das páginas)
 template_pdf: ./Data/modelo.pdf
 
